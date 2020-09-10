@@ -82,8 +82,8 @@ int channel_t_read(channel_t* self, int16_t* samples, int len) {
     self->input_buffer_consume_cursor = max(self->input_buffer_consume_cursor, self->input_buffer_feed_cursor - MAX_AUDIO_WINDOW_SIZE);
     // copy samples
     int samples_read = 0;
-    while(samples_read < len && self->input_buffer_consume_cursor < self->input_buffer_feed_cursor) {
-      samples[samples_read] = self->input_buffer[self->input_buffer_consume_cursor % MAX_AUDIO_WINDOW_SIZE];
+    while(samples_read < len && self->input_buffer_consume_cursor + samples_read < self->input_buffer_feed_cursor) {
+      samples[samples_read] = self->input_buffer[(self->input_buffer_consume_cursor + samples_read) % MAX_AUDIO_WINDOW_SIZE];
       samples_read++;
     }
     self->input_buffer_consume_cursor += samples_read;
@@ -186,10 +186,12 @@ void AnalogAudioClass::init(int rate) {
 }
 
 int32_t AnalogAudioClass::addChannel(uint32_t pin) {
+  // Copy old channels
   channel_t* newChannels = (channel_t*)malloc(sizeof(channel_t) * (channels_length + 1));
   for(int i = 0; i < channels_length; i++) {
     newChannels[i] = channels[i];
   }
+  // init new channel
   channel_t_init(newChannels + channels_length, pin);
   channels_length++;
   if(channels != NULL) {
